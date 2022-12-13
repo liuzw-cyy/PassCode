@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<!-- saved from url=(0045)http://txm.zstu.edu.cn:5008/StuPassCode/Index -->
+<html xmlns="http://www.w3.org/1999/xhtml" style="background-color: rgb(184, 232, 249);"><head runat="server"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>学生通行码</title>
+    <link href="./files/layer.css" type="text/css" rel="stylesheet">
+    <link href="./files/main.css" type="text/css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.8/vue.min.js"></script>
+    <script src="./files/layer.js" type="text/javascript"></script>
+    <script src="./files/jquery.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        let _data = {"Hs":[{"Prm1":"2022-09-02 23:53:29","Prm2":"阴性","Prm3":null,"Prm4":null}],"Ym":[{"Prm1":"2021-12-29","Prm2":"第3针","Prm3":null,"Prm4":null},{"Prm1":"2021-06-12","Prm2":"第2针","Prm3":null,"Prm4":null},{"Prm1":"2021-04-21","Prm2":"第1针","Prm3":null,"Prm4":null}],"Jkm":[{"Prm1":"2021-02-03 15:42:09","Prm2":"绍兴市","Prm3":"绿码","Prm4":null},{"Prm1":"2020-02-11 23:11:39","Prm2":"杭州市","Prm3":"绿码","Prm4":null}],"Txm":[{"Prm1":"2022-09-03","Prm2":"2022-09-10","Prm3":"启用","Prm4":null}],"Xcm":[]};
+        $(() =>{
+            $("html").css("background-color", "#b8e8f9");
+            getTime();
+            setInterval(() => {
+               getTime();
+            }, 1000);
+            // 定时刷新页面
+            //setTimeout(()=>{
+            //    location.reload();
+            //},1000 * 60)
+
+        });
+        function getTime(){
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            var hour = date.getHours();
+            var minute = date.getMinutes();
+            var second = date.getSeconds();
+
+            if(hour.toString().length<2)
+                hour = "0"+hour;
+            if(minute.toString().length<2)
+                minute = "0"+minute;
+            if(second.toString().length<2)
+                second = "0"+second;
+
+            $("#sj").text(month + "月" + day + "日  " + hour + ":" + minute + ":" + second);
+        }
+        function GetInfo(tag){
+           let info = eval("_data." + tag);
+           var html = "<div class='tips-info'>";
+           if(tag == 'Hs'){
+               html += "<div class='tips-title'><div>核酸检测时间</div><div>结果</div></div>";
+            }
+            if(tag == 'Ym'){
+                html += "<div class='tips-title'><div>疫苗接种时间</div><div>针数</div></div>";
+            }
+            if(tag == 'Jkm'){
+                html += "<div class='tips-title'><div>最近更新时间</div><div>码发放地</div><div>码状态</div></div>";
+            }
+            if (tag=='Txm') {
+                html += "<div class='tips-title'><div>开始时间</div><div>结束时间</div><div>状态</div></div>";
+            }
+            for(let i = 0;i < info.length; i++){
+                html += `<div class='tips-content'>`
+                + `<div>` + info[i].Prm1 + `</div>`
+                + `<div>` + info[i].Prm2 + `</div>`
+                + (info[i].Prm3 == null ? `` : "<div>" + info[i].Prm3 + "</div>" )
+                + `</div>`;
+            }
+            if (tag == 'Jkm') {
+                html += '<span style="color:blue;font-size:40px;text-decoration:underline;" onclick="handle_refresh()">点击刷新健康码信息<span>';
+            }
+            html += "</div>"
+            alertOpen(html);
+        }
+        let lOpen;
+        //弹出内容
+        function alertOpen(html){
+            lOpen = layer.open({
+                shadeClose: true
+                ,content: html
+                ,anim: 'up'
+                ,style: 'position:fixed; left:3%; top:500px; width:94%; height:700px; border: none; -webkit-animation-duration: .5s; animation-duration: .5s; border-radius: 25px;'
+            })
+        }
+        function alertTips(content){
+            //提示
+            layer.open({
+                content: "<span style='font-size: 35px;'>" + content + "</span>"
+                ,skin: 'msg'
+                ,time: 2 //2秒后自动关闭
+            });
+        }
+        //32位随机字符串
+        function getGuid(){
+            var oStr = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',oChar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',len = oChar.length;
+            return oStr.replace(/x/g, (match) => {
+                return oChar.charAt(Math.floor(Math.random() * len));
+            });
+        }
+        //获取验证码
+        function getCode(){
+            let sjh = $('.layui-m-layercont').find("input[name='sjh']").eq(0).val();
+            if(!isPhoneNum(sjh)){
+                alertTips("请输入正确的手机号码！！");
+                return;
+            }
+            let queryId = getGuid();
+            $("#queryId").val(queryId);
+            let sendTime = "2022-09-04 21:07:01";
+            $("#sendTime").val(sendTime);
+            let timeNum = 60, setText = (start) => {
+                let btn = $('.layui-m-layercont').find("span[name='btn_yzm']").eq(0);
+                btn.html(start ? timeNum : --timeNum);
+                btn.addClass("disabled2");
+
+                if (timeNum <= 0) {
+                    clearInterval(this.timer);
+                    btn.removeClass("disabled2");
+                    btn.html("重新获取");
+                };
+            };
+            setText(!0);
+            this.timer = setInterval(setText, 1000);
+
+            let loadingOpen;
+            $.ajax({
+                url: "/AdultPass/GetVerification",
+                type: "POST",
+                data: {
+                    sjh: sjh,
+                    queryId: queryId,
+                    sendTime: sendTime
+                },
+                beforeSend: () => {
+                    loadingOpen = layer.open({type: 2});
+                },
+                success: (ret, status) => {
+                    layer.close(loadingOpen);
+                    if (status == "success" && ret && ret.code == '00') {
+                        try{
+                            let datas = JSON.parse(ret.datas);
+                            if(datas && datas.code == 200){
+                                if(datas.data && datas.data.code == '00' && datas.data.result){
+                                    alertTips(datas.data.result);
+                                }else{
+                                    alertTips(datas.data.errorDesc);
+                                }
+                            }
+                            else{
+                                alertTips("短信发送失败！");
+                            }
+                        }catch(e){
+                            alertTips("短信发送失败！");
+                        }
+                    }
+                    else {
+                        alertTips("短信发送失败！");
+                    }
+                },
+                error: function (obj) {
+                    layer.close(loadingOpen);
+                    alertTips("短信发送失败！");
+                },
+                dataType: "json",
+                async: true
+            });
+        }
+        function getXcm(){
+            let sjh = $('.layui-m-layercont').find("input[name='sjh']").eq(0).val();
+            let yzm = $('.layui-m-layercont').find("input[name='yzm']").eq(0).val();
+            let queryId =  $("#queryId").val() == '' ? getGuid() : $("#queryId").val();
+            let sendTime = $("#sendTime").val() == '' ? "2022-09-04 21:07:01" : $("#sendTime").val();
+
+            if(!isPhoneNum(sjh)){
+                alertTips("请输入正确的手机号码！！");
+                return;
+            }
+            if(!(yzm && yzm.length == 6)){
+                alertTips("请输入正确的短信验证码！！");
+                return;
+            }
+            let loadingOpen;
+            $.ajax({
+                url: "/AdultPass/GetXcm",
+                type: "POST",
+                data: {
+                    sjh: sjh,
+                    queryId: queryId,
+                    sendTime: sendTime,
+                    verification: yzm
+                },
+                beforeSend: () => {
+                    loadingOpen = layer.open({type: 2});
+                },
+                success: (ret, status) => {
+                    layer.close(loadingOpen);
+                    if (status == "success" && ret && ret.code == '00') {
+                        try{
+                            let datas = JSON.parse(ret.datas);
+                            if(datas && datas.code == 200){
+                                if(datas.data && datas.data.code == '00' && datas.data.result){
+                                    alertTips("查询成功！");
+                                    let _hy = $("#xcm-hy");
+                                    let _h = `<div class="xcm-jg">` + (datas.data.result.value == "1" ? "更新时间：2022-09-04" : (datas.data.result.value == "2" ? "途经中高风险地区" : "没有行程记录")) + `</div>`;
+                                    _hy.html(_h);
+                                    $(".xcm-top-img>img").attr("src", (datas.data.result.value == "1" ? "/yqfk/img/go.png" : (datas.data.result.value == "2" ? "/yqfk/img/notgo.png" : "/yqfk/img/isgo.png")))
+                                    layer.close(lOpen);
+                                    $.post("/AdultPass/InsertXcm", {
+                                        sjh: sjh,
+                                        sendTime: sendTime,
+                                        jg: datas.data.result.value
+                                    });
+                                }else{
+                                    alertTips(datas.data.errorDesc);
+                                }
+                            }else{
+                                alertTips("查询数据失败！！");
+                            }
+                        }catch(e){
+                            alertTips("查询数据失败！");
+                        }
+                    } else {
+                        alertTips("查询数据失败！");
+                    }
+                },
+                error: function (obj) {
+                    layer.close(loadingOpen);
+                    alertTips("查询数据失败！");
+                },
+                dataType: "json",
+                async: true
+            });
+        }
+        //授权
+        function isCheck(e){
+            if(e.checked){
+                $('.layui-m-layercont').find(".hy-cx").eq(0).removeClass("disabled1");
+            }else{
+                $('.layui-m-layercont').find(".hy-cx").eq(0).addClass("disabled1");
+            }
+        }
+        //手机号码 正则
+        function isPhoneNum(phone){
+            var reg = /^1(3\d|4[5-9]|5[0-35-9]|6[2567]|7[0-8]|8\d|9[0-35-9])\d{8}$/;
+            return reg.test(phone);
+        }
+        //刷新健康码
+        function refreshJkm() {
+            $.ajax({
+                url: "/TchPassCode/RefreshJkm",
+                type: "POST",
+                success: function (msgBody) {
+                    var data = $.parseJSON(msgBody);
+                    if (data.Code == 1) {
+                        alertTips(data.Message);
+                        setTimeout(() => { location.reload() }, 500);
+                    }
+                    else {
+                        alertTips(data.Message);
+                    }
+                }
+            })
+        }
+        const handle_refresh = debounce(() => {
+            refreshJkm();
+        }, 1000);
+        /*
+         * fn [function] 需要防抖的函数
+         * delay [number] 毫秒，防抖期限值
+         */
+        function debounce(fn, delay) {
+            let timer = null; //借助闭包
+            return function () {
+                if (timer) {
+                    clearTimeout(timer); //进入该分支语句，说明当前正在一个计时过程中，并且又触发了相同事件。所以要取消当前的计时，重新开始计时
+                    timer = setTimeout(fn, delay);
+                } else {
+                    timer = setTimeout(fn, delay); // 进入该分支说明当前并没有在计时，那么就开始一个计时
+                }
+            };
+        }
+
+
+    </script>
+<input type="hidden" id="_w_simile" data-inspect-config="3"><script type="text/javascript" src="chrome-extension://dbjbempljhcmhlfpfacalomonjpalpko/scripts/inspector.js"></script></head>
+<body>
+    <div style="width: 100%;" id="app">
+        <!-- 个人信息 -->
+        <div class="top-body">
+            <div class="top-info" style="background: url(./card.png) no-repeat; background-size: 100%; background-position: center;">
+                <div class="top-banner">
+                    <img src="./files/schoolname.png"><br>
+                </div>
+                <div class="top-xm">
+                    {{name}} &nbsp;&nbsp;<span>{{title}}</span>
+                </div>
+                <div class="top-xgh">
+                    学工号：{{sId}}
+                </div>
+                <div class="top-dw">
+                    学院/班级：{{college}}
+                </div>
+                <div class="top-dw" onclick="GetInfo()">
+                    通行时间：<span style="text-decoration: underline">{{startTime}}至{{endTime}}</span>
+                </div>
+            </div>
+        </div>
+        <!-- 中间内容 -->
+        <div class="mid-info">
+            <div class="mid-time" onclick="window.location.reload();">
+                <span id="rq"></span>
+                <span id="sj" style="background: url(./refresh.png) no-repeat; background-size: 55px; background-position: right;padding:0 70px 0 70px; ">9月4日  21:37:57</span>
+            </div>
+            <!-- 二维码 -->
+            <div class="mid-ewm">
+                <img src="./qrcode.png" alt="">
+            </div>
+            <div class="mid-yqsj">
+                <div class="mid-jkm">
+                            <span>杭州健康码为<span style="color: green; font-size: 40px; text-decoration:underline;" onclick="GetInfo()">绿码</span></span>
+                </div>
+                <div class="mid-ym">
+                        <span>已完成<span class="ym-span" onclick="GetInfo()">第3针</span><img style="height: 5px; width: 5px;" src="./ym.png" alt="" />疫苗接种</span>
+                </div>
+            </div>
+            <div class="mid-msg" style="background-color: rgba(153, 239, 125, 0.2);"><span style="color: red;">本人如实自主申报每日健康打卡信息，72小时内未离开校园。</span></div>
+        </div>
+        <!-- 中间内容区域 -->
+        <div class="bottom-info">
+            <div class="bottom-left">
+                <!-- 核酸 -->
+                <div class="bottom-hs" style="background: url(./hs-green.png) no-repeat; background-size: 300px;">
+                    <div class="hs-sj" >{{acidTime}}</div>
+                    <div class="hs-jg" style="display: flex; align-items: center; flex-direction: row; justify-content: center; align-content: center;">
+                        <div style="font-size:130px;margin-right:5px">1</div>
+                        <div style="display: flex; align-items: flex-start; flex-direction: column">
+                            <div style="display:flex">天内</div>
+                            <div style="font-size: 50px;">阴性</div>
+                        </div>
+                    </div>
+                    <div class="hs-mc">核酸检测<img src="./files/edit.png"></div>
+                </div>
+            </div>
+            <div
+              class="bottom-right"
+              style="
+                border: 6px solid #2b9ad3;
+                border-radius: 40px;
+                color: #2b9ad3;
+                font-size: 37px;
+                width: 500px;
+                text-align: center;
+                height: 85%;
+                font-weight: 200;
+                flex-direction: column;
+                display: flex;
+                justify-content: space-around;
+              ">
+                <div>
+                    <p>
+                      <span
+                        style="
+                        color: #2b9ad3;
+                        font-size: 45px;
+                        font-weight: 600;"
+                        >请</span>做好<span style="color: #2b9ad3;font-size: 45px; font-weight: 600;">个人防护</span></p>
+                    <p>科学<span style="font-size: 45px;font-weight:600;color: #2b9ad3;">佩戴口罩</span></p>
+                    <p>当好自己<span style="color: #2b9ad3;font-size: 45px;font-weight:600;">健康</span>的</p>
+                    <p style="color: #2b9ad3;font-size: 45px;font-weight:600;">第一责任人</p>
+                </div>
+            </div>
+        </div>
+        <!-- 疫情防控地区核验 -->
+        <div hidden="hidden" id="yqfk-hy">
+            <div class="yqfk-hy">
+                <div class="hy-mc">疫情重点地区核验</div>
+                <div class="hy-sjh"><img src="./files/mobile.png"><input type="text" name="sjh" placeholder="手机号码"></div>
+                <div class="hy-yzm"><img src="./files/mobile-yz.png"><input type="text" name="yzm" placeholder="短信验证码"><span onclick="getCode()" name="btn_yzm">获取验证码</span></div>
+                <div class="hy-qr" onclick="$(event.target).children(0).click();"><input type="checkbox" onclick="isCheck(this)" value="同意并授权运营商查询本人疫情数据">同意并授权运营商查询本人通信行程卡数据</div>
+                <div class="hy-cx disabled1" onclick="getXcm()">查询</div>
+            </div>
+        </div>
+        <!-- 行程码短信验证传值 -->
+        <div hidden="hidden">
+            <div id="queryId"></div>
+            <div id="sendTime"></div>
+        </div>
+    </div>
+    <script>
+        new Vue({
+            el: '#app',
+            data(){
+                return {
+                    name: '李浩然',
+                    title: '研究生',
+                    sId: '202230603612',
+                    college: '计算机科学与技术学院（人工智能学院）',
+                    goTime: '2022-09-03至2022-09-10',
+                    time: '', // 当前时间
+                    acidTime: '', // 核酸时间
+                    message: 'Hello Vue.js!',
+                    startTime: '',
+                    endTime: ''
+                }
+            },
+            created() {
+                this.getDateWeek()
+            },
+            methods: {
+                Appendzero(obj)
+                {
+                    if(obj<10) return "0" +""+ obj;
+                    else return obj;
+                },
+                 getWeek(weeknum)
+                {
+                    if(weeknum==0)  week="周日";
+                    if(weeknum==1)  week="周一";
+                    if(weeknum==2)  week="周二";
+                    if(weeknum==3)  week="周三";
+                    if(weeknum==4)  week="周四";
+                    if(weeknum==5)  week="周五";
+                    if(weeknum==6)  week="周六";
+                    return week;
+                },
+
+                getDateWeek()
+                {
+                    var curDate = new Date();
+                    var now=new Date(curDate.getTime() - 24*60*60*1000);
+                    var year=now.getFullYear();//获取四位数年数
+                    var month=now.getMonth()+1;
+                    var date=now.getDate();
+                    var weeknum=now.getDay();
+
+                    var s=year + "-"+this.Appendzero(month) + "-" + this.Appendzero(date) + " " + this.getWeek(weeknum)+" ";
+                    var s1 = year + "-"+month + "-" + date + " " + this.getWeek(weeknum)+" ";
+                    console.log(s);
+                    this.time = s
+                    console.log(s1);
+                    this.startTime = this.GetDateStr(-3)
+                    this.endTime = this.GetDateStr(3)
+
+                    this.acidTime = `${this.Appendzero(month)}-${this.Appendzero(date)} 23:56`
+                },
+                GetDateStr(AddDayCount) {
+
+                    var dd = new Date();
+
+                    dd.setDate(dd.getDate()+AddDayCount);//获取AddDayCount天后的日期
+
+                    var y = dd.getFullYear();
+
+                    var m = (dd.getMonth()+1)<10?"0"+(dd.getMonth()+1):(dd.getMonth()+1);//获取当前月份的日期，不足10补0
+
+                    var d = dd.getDate()<10?"0"+dd.getDate():dd.getDate();//获取当前几号，不足10补0
+
+                    return y+"-"+m+"-"+d;
+                }
+            }
+
+        })
+    </script>
+</body></html>
